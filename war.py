@@ -48,15 +48,22 @@ def readexactly(sock, numbytes):
     before numbytes have been received, be sure to account for that here or in
     the caller.
     """
-    # TODO
-    pass
+    acc = "" #init empty byte string
+    while len(acc) < numbytes:
+        more = sock.recv(numbytes - len(acc))
+        if not more:
+            raise ConnectionError
+        acc += more
+    return acc
 
 
 def kill_game(game):
     """
     TODO: If either client sends a bad message, immediately nuke the game.
     """
-    pass
+    logging.info("Ending game between %s and %s", game.p1, game.p2)
+    game.p1.close()
+    game.p2.close()
 
 
 def compare_cards(card1, card2):
@@ -64,7 +71,12 @@ def compare_cards(card1, card2):
     TODO: Given an integer card representation, return -1 for card1 < card2,
     0 for card1 = card2, and 1 for card1 > card2
     """
-    pass
+    if (card1 % 13) > (card2 % 13):
+        return 1
+    elif (card1 % 13) < (card2 % 13):
+        return -1
+    else:
+        return 0
     
 
 def deal_cards():
@@ -72,7 +84,15 @@ def deal_cards():
     TODO: Randomize a deck of cards (list of ints 0..51), and return two
     26 card "hands."
     """
-    pass
+    deck = list(range(52))
+    # shuffle cards
+    for i in range(len(deck)):
+        j = random.randint(i, len(deck) - 1)
+        deck[i], deck[j] = deck[j], deck[i]
+    
+    p1_hand = deck[:26]
+    p2_hand = deck[26:]
+    return p1_hand, p2_hand
     
 
 def serve_game(host, port):
@@ -82,6 +102,59 @@ def serve_game(host, port):
     This function should run forever, continually serving clients.
     """
     pass
+    '''
+    def serve_game(host, port):
+    """
+    Open a socket to listen for new connections on host:port.
+    Perform the WAR protocol to serve a game between two clients.
+    """
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    
+    # Bind the socket to the address and port
+    server_socket.bind((host, port))
+    server_socket.listen(2)  # We only need to listen for two clients at a time
+    
+    logging.info("Server listening on %s:%d", host, port)
+    
+    # Accept connections from two clients
+    client1_socket, client1_address = server_socket.accept()
+    logging.info("Client 1 connected from %s", client1_address)
+    
+    client2_socket, client2_address = server_socket.accept()
+    logging.info("Client 2 connected from %s", client2_address)
+
+    # Send game start command with card distributions
+    p1_cards, p2_cards = deal_cards()
+    client1_socket.send(bytes([Command.GAMESTART.value]) + bytes(p1_cards))
+    client2_socket.send(bytes([Command.GAMESTART.value]) + bytes(p2_cards))
+    
+    logging.info("Game started, cards dealt")
+
+    # Game loop: each player plays 26 rounds
+    for round_num in range(26):
+        # Receive the cards each player wants to play
+        card1 = client1_socket.recv(1)  # Read 1 byte for client 1's card
+        card2 = client2_socket.recv(1)  # Read 1 byte for client 2's card
+        
+        if not card1 or not card2:  # If no card is received, disconnect
+            logging.error("Error receiving cards, closing game.")
+            break
+        
+        # Compare cards and determine the result
+        result = compare_cards(card1[0], card2[0])
+        
+        # Send result to both clients
+        client1_socket.send(bytes([Command.PLAYRESULT.value, result]))
+        client2_socket.send(bytes([Command.PLAYRESULT.value, result]))
+
+        logging.debug("Round %d: Client 1 card %d, Client 2 card %d, Result: %d", round_num, card1[0], card2[0], result)
+
+    # Close connections once the game is complete
+    client1_socket.close()
+    client2_socket.close()
+    server_socket.close()
+    logging.info("Game over. Connections closed.")
+    '''
     
 
 async def limit_client(host, port, loop, sem):
