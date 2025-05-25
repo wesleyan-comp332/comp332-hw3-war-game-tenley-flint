@@ -1,0 +1,9 @@
+1: Two clients successfully completed a game with the server most of the time. 
+(There error in the code related to sending bytes to the clients appropriately. Getting the following error
+client1_socket.send(bytes([Command.PLAYRESULT.value, result]))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: bytes must be in range(0, 256))
+2: The server correctly handled a game with a buggy client, and continued functioning as expected afterwards.
+3: Successfully completed multiple games at the same time. - Can't run because of the same error encountered in case 1
+
+Total points: 110 - 45 = 65
